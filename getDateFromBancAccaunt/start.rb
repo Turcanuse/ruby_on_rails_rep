@@ -1,5 +1,5 @@
 #autor: SergheiScepanovschi
-#ver 3.0
+#ver 3.1
 require 'date'
 require 'watir'
 require 'webdrivers'
@@ -20,13 +20,16 @@ class Card
   end
 end
 class Accaunt
-  def initialize(_nameAccaunt, _currency, _availableBalance, _classification,_card, _transaction )
+  def initialize(_nameAccaunt, _currency, _availableBalance, _classification)
     @nameAccaunt      = _nameAccaunt      #имя
     @currency         = _currency         #валюта
     @availableBalance = _availableBalance #баланс
     @classification   = _classification   #природа
-    @card             = _card             #карты
-    @transaction      = _transaction      #транзакции
+    # @card             = _card             #карты
+    #@transaction      = _transaction      #транзакции
+  end
+  def exec
+    puts @nameAccaunt, @currency, @availableBalance, @classification
   end
 end
 
@@ -39,3 +42,6 @@ browser.button(:name => "customer_type").click
 strct = browser.script(:id => "data").innertext
 
 puts strct
+
+accaunt = Accaunt.new("DailyAcc", "MDL", 1213123123,"Debit")
+accaunt.exec
