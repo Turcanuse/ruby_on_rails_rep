@@ -1,3 +1,5 @@
+#autor: SergheiScepanovschi
+#ver 1.0
 require 'watir'
 require 'webdrivers'
 require 'faker'
