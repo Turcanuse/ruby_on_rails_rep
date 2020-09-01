@@ -1,5 +1,5 @@
 #autor: SergheiScepanovschi
-#ver 3.6
+#ver 3.7
 require 'date'
 require 'watir'
 require 'webdrivers'
@@ -29,23 +29,31 @@ class Card
   end
 end
 class Accaunt
-  attr_accessor :array_card
+  attr_accessor :nameAccaunt, :currency, :availableBalance, :classification, :array_card
   def initialize(_nameAccaunt, _currency, _availableBalance, _classification)
     @nameAccaunt       = _nameAccaunt      #имя
     @currency          = _currency         #валюта
     @availableBalance  = _availableBalance #баланс
     @classification    = _classification   #природа
     @array_card        = Array.new         #карты
-    @array_transaction = Array.new         #транзакции
+    #@array_transaction = Array.new         #транзакции
+  end
+  def to_json
+    JSON.dump ({
+        :nameAccaunt => @nameAccaunt,
+        :currency => @currency,
+        :availableBalance => @availableBalance,
+        :classification => @classification
+  })
   end
   # Добавляем карту
   def addCard(_carrierName)
     @array_card << Card.new(_carrierName)        #push карты
   end
   #Добавляем транзакцию
-  def addTransaction(_date, _description, _amount)
-    @array_transaction << Transaction.new(_date, _description, _amount)        #push карты
-  end
+  #def addTransaction(_date, _description, _amount)
+  #  @array_transaction << Transaction.new(_date, _description, _amount)        #push карты
+  #end
   def exec
     puts @nameAccaunt, @currency, @availableBalance, @classification
     #@transaction.exec
@@ -64,6 +72,9 @@ browser.goto "https://demo.bendigobank.com.au/banking/sign_in"
 browser.button(:name => "customer_type").click
 #копируем необходимые данные
 strct = browser.script(:id => "data").innertext
+#переходим на страницу странзакциями
+#transf=browser.object(:class => "overflow-ellipsis panel__header__label__primary")
+#puts transf
 #Находим данные
 pos1 = strct.rindex(/__DATA__/)
 
@@ -73,11 +84,10 @@ pos1 =pos1+10
 pos2 =pos2-69
 # Выделяем строку с данными
 strct = strct.slice(pos1,pos2)
-puts strct
+#puts strct
 #здесь при парсинг JSON
 my_hash = JSON.parse(strct)
 
-puts "------------------------------------------------------------------------------------"
 # создаём массив обььектов класса
 array_accaunts = Array.new
 i=0
@@ -93,9 +103,18 @@ for item in my_hash["accounts"] do
   #end
   i=i+1
 end
-
-for item in array_accaunts do
-  puts  item.exec # не подсвечивает метод
-  puts "+++++++++++++++++++++++++++++++++++++++++++"
-end
 puts "------------------------------------------------------------------------------------"
+#сериализация JSON даёт след строку ["#<Accaunt:0x00005591056bfa30>","#<Accaunt:0x00005591056bf990>","#<Accaunt:0x00005591056bf8f0>","#<Accaunt:0x00005591056bf8a0>","#<Accaunt:0x00005591056bf828>"]
+#stringJSON = array_accaunts.to_json
+stringJSON = ""
+for accaunt in array_accaunts do
+  stringJSON = stringJSON +","+ accaunt.to_json
+end
+#сериализация YAMAL
+puts stringJSON
+  #for item in array_accaunts do
+  #  puts  item.exec # не подсвечивает метод
+  #  puts "+++++++++++++++++++++++++++++++++++++++++++"
+  #end
+puts "------------------------------------------------------------------------------------"
+
