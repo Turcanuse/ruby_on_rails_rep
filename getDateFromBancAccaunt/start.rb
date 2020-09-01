@@ -1,5 +1,5 @@
 #autor: SergheiScepanovschi
-#ver 3.4
+#ver 3.5
 require 'date'
 require 'watir'
 require 'webdrivers'
@@ -30,12 +30,12 @@ class Card
 end
 class Accaunt
   @array_card = Array.new
-  def initialize(_nameAccaunt, _currency, _availableBalance, _classification,_carrierName,_carrierName2)
+  def initialize(_nameAccaunt, _currency, _availableBalance, _classification)
     @nameAccaunt      = _nameAccaunt      #имя
     @currency         = _currency         #валюта
     @availableBalance = _availableBalance #баланс
     @classification   = _classification   #природа
-    @array_card       = [Card.new(_carrierName), Card.new(_carrierName2)]        #карты
+    # @array_card  << Card.new(_carrierName)        #карты
     @transaction      = Transaction.new("31.12.2020","Магазин",-32)      #транзакции
   end
   def addCard(_carrierName)
@@ -74,18 +74,12 @@ puts "--------------------------------------------------------------------------
 # создаём оьект класса
 array_accaunts = Array.new
 for item in my_hash["accounts"] do
-  array_accaunts << Accaunt.new(my_hash["accounts"][0]["name"], my_hash["accounts"][0]["currentBalance"]["currency"], my_hash["accounts"][0]["currentBalance"]["value"],my_hash["accounts"][0]["classification"],my_hash["accounts"][0]["cards"][0]["carrierName"],my_hash["accounts"][0]["cards"][1]["carrierName"])
+  array_accaunts << Accaunt.new(item["name"], item["currentBalance"]["currency"], item["currentBalance"]["value"],item["classification"])
+  #array_accaunt ,item["cards"][0]["carrierName"],item["cards"][1]["carrierName"]
 end
 
 for item in array_accaunts do
   puts  item.exec # не подсвечивает метод
   puts "+++++++++++++++++++++++++++++++++++++++++++"
 end
-
-#array_accaunts << Accaunt.new(my_hash["accounts"][0]["name"], my_hash["accounts"][0]["currentBalance"]["currency"], my_hash["accounts"][0]["currentBalance"]["value"],my_hash["accounts"][0]["classification"],"Anton Pirojkov","Ivan Ivanich")
-#array_accaunts[0].exec
-#for item in my_hash["accounts"] do
-#  puts  item["name"] # не подсвечивает метод
-#end
 puts "------------------------------------------------------------------------------------"
-#thismonthlist[:Roles].flat_map { |role| role[:admins] }
