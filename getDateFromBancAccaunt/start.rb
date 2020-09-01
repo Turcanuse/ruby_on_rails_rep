@@ -1,5 +1,5 @@
 #autor: SergheiScepanovschi
-#ver 3.5
+#ver 3.6
 require 'date'
 require 'watir'
 require 'webdrivers'
@@ -29,24 +29,31 @@ class Card
   end
 end
 class Accaunt
-  @array_card = Array.new
+  attr_accessor :array_card
   def initialize(_nameAccaunt, _currency, _availableBalance, _classification)
-    @nameAccaunt      = _nameAccaunt      #имя
-    @currency         = _currency         #валюта
-    @availableBalance = _availableBalance #баланс
-    @classification   = _classification   #природа
-    # @array_card  << Card.new(_carrierName)        #карты
-    @transaction      = Transaction.new("31.12.2020","Магазин",-32)      #транзакции
+    @nameAccaunt       = _nameAccaunt      #имя
+    @currency          = _currency         #валюта
+    @availableBalance  = _availableBalance #баланс
+    @classification    = _classification   #природа
+    @array_card        = Array.new         #карты
+    @array_transaction = Array.new         #транзакции
   end
+  # Добавляем карту
   def addCard(_carrierName)
-    @array_card << Card.new(_carrierName)
+    @array_card << Card.new(_carrierName)        #push карты
+  end
+  #Добавляем транзакцию
+  def addTransaction(_date, _description, _amount)
+    @array_transaction << Transaction.new(_date, _description, _amount)        #push карты
   end
   def exec
     puts @nameAccaunt, @currency, @availableBalance, @classification
     #@transaction.exec
-    #for item in @array_card do
-    #  puts  item.exec # не подсвечивает метод
-    #end
+    puts "===================="
+    for item in @array_card do
+      puts  item.exec # не подсвечивает метод
+    end
+    puts "===================="
   end
 end
 
@@ -71,11 +78,20 @@ puts strct
 my_hash = JSON.parse(strct)
 
 puts "------------------------------------------------------------------------------------"
-# создаём оьект класса
+# создаём массив обььектов класса
 array_accaunts = Array.new
+i=0
 for item in my_hash["accounts"] do
+
   array_accaunts << Accaunt.new(item["name"], item["currentBalance"]["currency"], item["currentBalance"]["value"],item["classification"])
-  #array_accaunt ,item["cards"][0]["carrierName"],item["cards"][1]["carrierName"]
+  #j=0
+  for card in item["cards"] do
+    array_accaunts[i].addCard(card["carrierName"])
+  end
+  #for transaction in item["primaryActions"] do
+  #  array_accaunts[i].addTransaction(transaction[semantic], transaction[semantic], _amount)
+  #end
+  i=i+1
 end
 
 for item in array_accaunts do
