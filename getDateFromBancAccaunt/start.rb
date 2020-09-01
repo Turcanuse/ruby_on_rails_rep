@@ -1,5 +1,5 @@
 #autor: SergheiScepanovschi
-#ver 3.3
+#ver 3.4
 require 'date'
 require 'watir'
 require 'webdrivers'
@@ -8,6 +8,7 @@ require 'rubygems'
 require 'json'
 
 class Transaction
+  attr_accessor :date, :description, :amount # открываем доступ r/w
   def initialize(_date, _description, _amount)
     @date        = _date         #Дата
     @description = _description  #описание
@@ -19,6 +20,7 @@ class Transaction
 end
 
 class Card
+  attr_accessor :carrierName
   def initialize(_carrierName)
     @carrierName        = _carrierName       #имя владельца
   end
@@ -27,18 +29,21 @@ class Card
   end
 end
 class Accaunt
-  def initialize(_nameAccaunt, _currency, _availableBalance, _classification,_carrierName)
+  @array_card = Array.new
+  def initialize(_nameAccaunt, _currency, _availableBalance, _classification,_carrierName,_carrierName2)
     @nameAccaunt      = _nameAccaunt      #имя
     @currency         = _currency         #валюта
     @availableBalance = _availableBalance #баланс
     @classification   = _classification   #природа
-    @card             = Card.new(_carrierName)          #карты
+    @array_card  =[Card.new(_carrierName), Card.new(_carrierName2) ]          #карты
     @transaction      = Transaction.new("31.12.2020","Магазин",-32)      #транзакции
   end
   def exec
     puts @nameAccaunt, @currency, @availableBalance, @classification
     @transaction.exec
-    @card.exec
+    for item in @array_card do
+      puts  item.exec # не подсвечивает метод
+    end
   end
 end
 
@@ -53,12 +58,19 @@ strct = browser.script(:id => "data").innertext
 puts strct
 #Находим данные
 pos1 = strct.rindex(/__DATA__/)
+
+#одошол проблему с поиском третьего символа переноса строки нашол другую уникальную позцию
+pos2 = strct.rindex(/__BOOTSTRAP_I18N__/)
+pos1 =pos1+10
+pos2 =pos2-69
 # Выделяем строку с данными
-strct1 = strct.slice(pos1+10,13897) # я пока не знаю как получить положение третьего переноса строки
+strct1 = strct.slice(pos1,pos2)
 puts strct1
-#здесь при парсинге JSON возникает ошибка из-за лишних символов в строке
-#my_hash = JSON.parse(strct1)
-#puts my_hash["name"] #пример того как можно получить значени из распарсенной строки
+#здесь при парсинг JSON
+my_hash = JSON.parse(strct1)
+
 # пример того как будет заполнятся оьект класса
-accaunt = Accaunt.new("DailyAcc", "MDL", 1213123123,"Debit","Anton Pirojkov")
+accaunt = Accaunt.new("DailyAcc", "MDL", 1213123123,"Debit","Anton Pirojkov","Ivan Ivanich")
 accaunt.exec
+puts "------------------------------------------------------------------------------------"
+puts my_hash # получение данных в my_hash
