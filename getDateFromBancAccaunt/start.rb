@@ -1,5 +1,5 @@
 #autor: SergheiScepanovschi
-#ver 3.2
+#ver 3.3
 require 'date'
 require 'watir'
 require 'webdrivers'
@@ -13,24 +13,32 @@ class Transaction
     @description = _description  #описание
     @amount      = _amount       #сумма
   end
+  def exec
+    puts @date, @description, @amount
+  end
 end
 
 class Card
   def initialize(_carrierName)
     @carrierName        = _carrierName       #имя владельца
   end
+  def exec
+    puts @carrierName
+  end
 end
 class Accaunt
-  def initialize(_nameAccaunt, _currency, _availableBalance, _classification)
+  def initialize(_nameAccaunt, _currency, _availableBalance, _classification,_carrierName)
     @nameAccaunt      = _nameAccaunt      #имя
     @currency         = _currency         #валюта
     @availableBalance = _availableBalance #баланс
     @classification   = _classification   #природа
-    # @card             = _card             #карты
-    #@transaction      = _transaction      #транзакции
+    @card             = Card.new(_carrierName)          #карты
+    @transaction      = Transaction.new("31.12.2020","Магазин",-32)      #транзакции
   end
   def exec
     puts @nameAccaunt, @currency, @availableBalance, @classification
+    @transaction.exec
+    @card.exec
   end
 end
 
@@ -49,8 +57,8 @@ pos1 = strct.rindex(/__DATA__/)
 strct1 = strct.slice(pos1+10,13897) # я пока не знаю как получить положение третьего переноса строки
 puts strct1
 #здесь при парсинге JSON возникает ошибка из-за лишних символов в строке
-my_hash = JSON.parse(strct1)
-puts my_hash["name"] #пример того как можно получить значени из распарсенной строки
+#my_hash = JSON.parse(strct1)
+#puts my_hash["name"] #пример того как можно получить значени из распарсенной строки
 # пример того как будет заполнятся оьект класса
-accaunt = Accaunt.new("DailyAcc", "MDL", 1213123123,"Debit")
+accaunt = Accaunt.new("DailyAcc", "MDL", 1213123123,"Debit","Anton Pirojkov")
 accaunt.exec
