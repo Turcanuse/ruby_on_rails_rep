@@ -9,13 +9,12 @@ require 'json'
 
 #класс для сериализации обьекта
 class JSONable
-  def to_json
-    hash = {}
-    self.instance_variables.each do |var|
-      hash[var] = self.instance_variable_get var
-    end
-    hash.to_json
+  def hashify
+    instance_variables.map do |var|
+      [var[1..-1].to_sym, instance_variable_get(var)]
+    end.to_h
   end
+
   def from_json! string
     JSON.load(string).each do |var, val|
       self.instance_variable_set var, val
@@ -44,7 +43,7 @@ class Card
     puts @carrierName
   end
 end
-class Accaunt < JSONable
+class Accaunt
   attr_accessor :nameAccaunt, :currency, :availableBalance, :classification, :array_card
   def initialize(_nameAccaunt, _currency, _availableBalance, _classification)
     @nameAccaunt       = _nameAccaunt      #имя
@@ -73,44 +72,51 @@ class Accaunt < JSONable
   end
 end
 
-browser = Watir::Browser.new :chrome
-#заходим на сайт
-browser.goto "https://demo.bendigobank.com.au/banking/sign_in"
-#кликаем на кнопку входа
-browser.button(:name => "customer_type").click
-#копируем необходимые данные
-strct = browser.script(:id => "data").innertext
-#переходим на страницу странзакциями
-#transf=browser.object(:class => "overflow-ellipsis panel__header__label__primary")
-#puts transf
-#Находим данные
-pos1 = strct.rindex(/__DATA__/)
-#одошол проблему с поиском третьего символа переноса строки нашол другую уникальную позцию
-pos2 = strct.rindex(/__BOOTSTRAP_I18N__/)
-pos1 =pos1+10
-pos2 =pos2-69
-# Выделяем строку с данными
-strct = strct.slice(pos1,pos2)
-#puts strct
-#здесь при парсинг JSON
-my_hash = JSON.parse(strct)
-
-# создаём массив обььектов класса
-array_accaunts = Array.new
-i=0
-for item in my_hash["accounts"] do
-  array_accaunts << Accaunt.new(item["name"], item["currentBalance"]["currency"], item["currentBalance"]["value"],item["classification"])
-  for card in item["cards"] do
-    array_accaunts[i].addCard(card["carrierName"])
+class AccauntsArray < JSONable
+  def initialize
+    @Accaunts        = Array.new         #карты
   end
-  #for transaction in item["primaryActions"] do
-  #  array_accaunts[i].addTransaction(transaction[semantic], transaction[semantic], _amount)
-  #end
-  i=i+1
+  def addAccaunt(_nameAccaunt, _currency, _availableBalance, _classification)
+    @Accaunts << Accaunt.new(_nameAccaunt, _currency, _availableBalance, _classification)        #push карты
+  end
+
+  # добавляем новые элементы массива из JSON hash
+  def addAccauntFromHash
+    browser = Watir::Browser.new :chrome
+    #заходим на сайт
+    browser.goto "https://demo.bendigobank.com.au/banking/sign_in"
+    #кликаем на кнопку входа
+    browser.button(:name => "customer_type").click
+    #копируем необходимые данные
+    strct = browser.script(:id => "data").innertext
+
+    #Находим данные
+    pos1 = strct.rindex(/__DATA__/)
+    pos2 = strct.rindex(/__BOOTSTRAP_I18N__/)
+    pos1 =pos1+10
+    pos2 =pos2-69
+    # Копируем подстроку с данными
+    strct = strct.slice(pos1,pos2)
+    #здесь при парсинг JSON
+    my_hash = JSON.parse(strct)
+    i=0
+    for item in my_hash["accounts"] do
+      self.addAccaunt(item["name"], item["currentBalance"]["currency"], item["currentBalance"]["value"],item["classification"])
+      for card in item["cards"] do
+        @Accaunts[i].addCard(card["carrierName"])
+      end
+    i=i+1
+    end
+  end
+
+
 end
+
+accaunts = AccauntsArray.new()
+accaunts.addAccauntFromHash
 puts "------------------------------------------------------------------------------------"
-stringJSON = array_accaunts[0].to_json
-#сериализация YAMAL
+stringJSON = accaunts.hashify
+
 puts stringJSON
 puts "------------------------------------------------------------------------------------"
 
