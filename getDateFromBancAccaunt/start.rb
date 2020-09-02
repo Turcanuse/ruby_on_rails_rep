@@ -1,11 +1,27 @@
 #autor: SergheiScepanovschi
-#ver 3.7
+#ver 3.8
 require 'date'
 require 'watir'
 require 'webdrivers'
 require 'faker'
 require 'rubygems'
 require 'json'
+
+#класс для сериализации обьекта
+class JSONable
+  def to_json
+    hash = {}
+    self.instance_variables.each do |var|
+      hash[var] = self.instance_variable_get var
+    end
+    hash.to_json
+  end
+  def from_json! string
+    JSON.load(string).each do |var, val|
+      self.instance_variable_set var, val
+    end
+  end
+end
 
 class Transaction
   attr_accessor :date, :description, :amount # открываем доступ r/w
@@ -28,7 +44,7 @@ class Card
     puts @carrierName
   end
 end
-class Accaunt
+class Accaunt < JSONable
   attr_accessor :nameAccaunt, :currency, :availableBalance, :classification, :array_card
   def initialize(_nameAccaunt, _currency, _availableBalance, _classification)
     @nameAccaunt       = _nameAccaunt      #имя
@@ -37,14 +53,6 @@ class Accaunt
     @classification    = _classification   #природа
     @array_card        = Array.new         #карты
     #@array_transaction = Array.new         #транзакции
-  end
-  def to_json
-    JSON.dump ({
-        :nameAccaunt => @nameAccaunt,
-        :currency => @currency,
-        :availableBalance => @availableBalance,
-        :classification => @classification
-  })
   end
   # Добавляем карту
   def addCard(_carrierName)
@@ -77,7 +85,6 @@ strct = browser.script(:id => "data").innertext
 #puts transf
 #Находим данные
 pos1 = strct.rindex(/__DATA__/)
-
 #одошол проблему с поиском третьего символа переноса строки нашол другую уникальную позцию
 pos2 = strct.rindex(/__BOOTSTRAP_I18N__/)
 pos1 =pos1+10
@@ -92,9 +99,7 @@ my_hash = JSON.parse(strct)
 array_accaunts = Array.new
 i=0
 for item in my_hash["accounts"] do
-
   array_accaunts << Accaunt.new(item["name"], item["currentBalance"]["currency"], item["currentBalance"]["value"],item["classification"])
-  #j=0
   for card in item["cards"] do
     array_accaunts[i].addCard(card["carrierName"])
   end
@@ -104,17 +109,8 @@ for item in my_hash["accounts"] do
   i=i+1
 end
 puts "------------------------------------------------------------------------------------"
-#сериализация JSON даёт след строку ["#<Accaunt:0x00005591056bfa30>","#<Accaunt:0x00005591056bf990>","#<Accaunt:0x00005591056bf8f0>","#<Accaunt:0x00005591056bf8a0>","#<Accaunt:0x00005591056bf828>"]
-#stringJSON = array_accaunts.to_json
-stringJSON = ""
-for accaunt in array_accaunts do
-  stringJSON = stringJSON +","+ accaunt.to_json
-end
+stringJSON = array_accaunts[0].to_json
 #сериализация YAMAL
 puts stringJSON
-  #for item in array_accaunts do
-  #  puts  item.exec # не подсвечивает метод
-  #  puts "+++++++++++++++++++++++++++++++++++++++++++"
-  #end
 puts "------------------------------------------------------------------------------------"
 
