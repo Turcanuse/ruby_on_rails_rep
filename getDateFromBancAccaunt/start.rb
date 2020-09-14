@@ -6,21 +6,7 @@ require 'webdrivers'
 require 'faker'
 require 'rubygems'
 require 'json'
-
-#класс для сериализации обьекта
-class JSONable
-  def hashify
-    instance_variables.map do |var|
-      [var[1..-1].to_sym, instance_variable_get(var)]
-    end.to_h
-  end
-
-  def from_json! string
-    JSON.load(string).each do |var, val|
-      self.instance_variable_set var, val
-    end
-  end
-end
+require 'jsonapi-serializers'
 
 class Transaction
   attr_accessor :date, :description, :amount # открываем доступ r/w
@@ -72,7 +58,7 @@ class Accaunt
   end
 end
 
-class AccauntsArray < JSONable
+class AccauntsArray
   def initialize
     @Accaunts        = Array.new         #карты
   end
@@ -89,7 +75,6 @@ class AccauntsArray < JSONable
     browser.button(:name => "customer_type").click
     #копируем необходимые данные
     strct = browser.script(:id => "data").innertext
-
     #Находим данные
     pos1 = strct.rindex(/__DATA__/)
     pos2 = strct.rindex(/__BOOTSTRAP_I18N__/)
@@ -108,15 +93,27 @@ class AccauntsArray < JSONable
     i=i+1
     end
   end
+end
 
-
+def to_hash2(obj1)
+  Hash[obj1.instance_variables.map { |key|
+    variable = obj1.instance_variable_get key
+    [key.to_s[1..-1].to_sym,
+     if variable.is_a?(Hash) then # проблемное место не понмаю как отличить Hash от обьекта и какието странные адреса в Хэше
+       to_hash2(variable)
+     else
+       variable
+     end
+    ]
+  }]
 end
 
 accaunts = AccauntsArray.new()
 accaunts.addAccauntFromHash
-puts "------------------------------------------------------------------------------------"
-stringJSON = accaunts.hashify
 
-puts stringJSON
+puts "------------------------------------------------------------------------------------"
+hash = to_hash2(accaunts)
+
+puts hash
 puts "------------------------------------------------------------------------------------"
 
