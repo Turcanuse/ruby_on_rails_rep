@@ -118,7 +118,7 @@ i = 0
 browser.elements(:xpath, '//li[@data-semantic="account-item"]').map do |build|
   if i < 4 then
     build.click
-    sleep 10
+    sleep 12
     i+=1
   else
     break
@@ -129,8 +129,9 @@ browser.elements(:xpath, '//li[@data-semantic="account-item"]').map do |build|
   #скролим вниз
   #scroll_to_bottom(browser)
   j = 0
+  # browser.send_keys(:control, 't')
   browser.elements(:xpath, '//a[@class="_1pyzXOL8PW panel--hover"]').map do |transaction|
-    if j < 10 then
+    if j < 5 then
       #кликаем по очерёдной транзакции
       transaction.click
       sleep 1
@@ -139,14 +140,12 @@ browser.elements(:xpath, '//li[@data-semantic="account-item"]').map do |build|
       break
     end
     #собираем данные с транзакции
-    header_transaction = browser.element(:xpath, header_transaction_span).text
-
-    properties_transaction = browser.element(:xpath,properties_transaction_div)
-
-    name_transaction        = properties_transaction.elements(:xpath,'//span[@class="uilist__item__label"]')[0].text
-    date_transaction        = properties_transaction.elements(:xpath,'//span[@class="uilist__item__detail"]')[0].text
-    description_transaction = properties_transaction.elements(:xpath,description_transaction_tag)[2].text
-    amount_transaction = header_transaction.delete('Credit of ')
+    header_transaction = Nokogiri::HTML(browser.html).css('span[data-semantic="payment-amount"]')
+    properties_transaction = Nokogiri::HTML(browser.html).css('div[class="uilist__item"]')
+    name_transaction = properties_transaction.css('span[class="uilist__item__label"]')[0] ? properties_transaction.css('span[class="uilist__item__label"]')[0].text : "None"
+    date_transaction        = properties_transaction.css('span[class="uilist__item__detail"]')[0] ? properties_transaction.css('span[class="uilist__item__detail"]')[0].text : "None"
+    description_transaction = properties_transaction.css('span[class="uilist__item__detail"]')[2] ? properties_transaction.css('span[class="uilist__item__detail"]')[2].text : "None"
+    amount_transaction = header_transaction.children.last.text.delete('$')
     array_accaunts[i-1].add_transaction(name_transaction, date_transaction, description_transaction, amount_transaction)
 
     browser.back
