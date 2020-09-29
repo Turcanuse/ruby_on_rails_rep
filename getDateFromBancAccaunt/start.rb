@@ -1,22 +1,23 @@
-#autor: SergheiScepanovschi
-#ver 3.8
+# frozen_string_literal: true
+
 require 'date'
-require 'watir'
-require 'nokogiri'
-require 'webdrivers'
-require 'faker'
-require 'rubygems'
 require 'json'
-require 'jsonapi-serializers'
+require 'nokogiri'
+require 'watir'
+require 'webdrivers'
+
+TWO_MONTH = 5.freeze
 
 class Transaction
-  attr_accessor :name, :date, :description, :amount # открываем доступ r/w
+  attr_accessor :name, :date, :description, :amount
+
   def initialize(v_name, v_date, v_description, v_amount)
-    @name        = v_name,        #название
-    @date        = v_date         #Дата
-    @description = v_description  #описание
-    @amount      = v_amount       #сумма
+    @name        = v_name
+    @date        = v_date
+    @description = v_description
+    @amount      = v_amount
   end
+
   def to_h
     {
         name: name,
@@ -24,141 +25,111 @@ class Transaction
         description: description,
         amount: amount
     }
-    end
-end
-
-class Card
-  attr_accessor :carrierName
-  def initialize(v_carrierName)
-    @carrierName        = v_carrierName       #имя владельца
-  end
-  def to_h
-    {
-        carrierName: carrierName
-    }
   end
 end
 
 class Accaunt
-  attr_accessor :name_accaunt, :currency, :availableBalance, :classification, :array_card,:array_transaction
+  attr_accessor :name_accaunt, :currency, :availableBalance,
+                :classification, :array_card,:array_transaction
+
   def initialize(v_nameAccaunt, v_currency, v_availableBalance, v_classification)
-    @name_accaunt       = v_nameAccaunt      #имя
-    @currency          = v_currency         #валюта
-    @availableBalance  = v_availableBalance #баланс
-    @classification    = v_classification   #природа
-    @array_card        = Array.new         #карты
-    @array_transaction = Array.new         #транзакции
+    @name_accaunt      = v_nameAccaunt
+    @currency          = v_currency
+    @availableBalance  = v_availableBalance
+    @classification    = v_classification
+    @array_transaction = []
   end
+
   def to_h
     {
         name_accaunt: name_accaunt,
         currency: currency,
         availableBalance: availableBalance,
         classification: classification,
-        array_card: array_card.map(&:to_h),
         array_transaction: array_transaction.map(&:to_h)
     }
   end
-  # Добавляем карту
-  def addCard(v_carrierName)
-    @array_card << Card.new(v_carrierName)        #push карты
-  end
-  #Добавить транзакцию
+
   def add_transaction(v_name, v_date, v_description, v_amount)
-    array_transaction << Transaction.new(v_name, v_date, v_description, v_amount)        #push карты
+    array_transaction << Transaction.new(v_name, v_date, v_description, v_amount)
   end
 end
 
+def scroll_to_bottom(browser)
+  while browser.text.include?('No more activity') == false
+    browser.scroll.to :bottom
+  end
+end
 
-# добавляем новые элементы массива из JSON hash
-array_accaunts = Array.new()
+array_accaunts = []
+container_attributes = []
+date_transaction = ''
+description_transaction = ''
+current_date = Time.now.strftime('%e %b %Y')
+edge_date = Date.parse(current_date.to_str) - TWO_MONTH
+
 browser = Watir::Browser.new :firefox
-def scroll_to_bottom(_browser)
-  #скролим вниз сайта чтобы можно было бы подцепить весь список транзакций
-  while _browser.text.include?("No more activity")==false do
-    _browser.scroll.to :bottom
-  end
-end
+browser.goto 'https://demo.bendigobank.com.au/banking/sign_in'
+browser.button(:name => 'customer_type').click
+strct = browser.script(:id => 'data').innertext
 
-#заходим на сайт
-browser.goto "https://demo.bendigobank.com.au/banking/sign_in"
-
-#кликаем на кнопку входа
-browser.button(:name => "customer_type").click
-#копируем необходимые данные
-strct = browser.script(:id => "data").innertext
-
-#Находим данные
 pos1 = strct.rindex(/__DATA__/)
 pos2 = strct.rindex(/__BOOTSTRAP_I18N__/)
-pos1 =pos1+10
-pos2 =pos2-69
-# Копируем подстроку с данными
-strct = strct.slice(pos1,pos2)
-#здесь при парсинг JSON
+pos1 += 10; pos2 -= 69
+
+strct = strct.slice(pos1, pos2)
 my_hash = JSON.parse(strct)
-i=0
- for item in my_hash["accounts"] do
-    array_accaunts << Accaunt.new(item["name"], item["currentBalance"]["currency"], item["currentBalance"]["value"],item["classification"])
-    for card in item["cards"] do
-      array_accaunts[i].addCard(card["carrierName"])
-    end
-    i=i+1
- end
-
-#TWO_MONTH                  = 60
-#current_date               = Time.new.strftime('%Y-%m-%d')
-#edge_date                  = Date.strptime(current_date) - TWO_MONTH
-header_transaction_span    = '//span[@data-semantic="payment-amount"]'
-properties_transaction_div = '//div[@class="uilist__item"]'
-#transaction_li             = '//li[contains(@class, "grouped-list__group") and contains(@data-semantic, "activity-group")]'
-#list_transaction_li        = './/li[@data-semantic="activity-item"]'
-description_transaction_tag    = '//span[@class="uilist__item__detail"]'
-i = 0
-browser.elements(:xpath, '//li[@data-semantic="account-item"]').map do |build|
-  if i < 4 then
-    build.click
-    sleep 12
-    i+=1
-  else
-    break
-  end
-  # begin
-  # transaction_date = Date.strptime(list_transaction.values.last)
-
-  #скролим вниз
-  #scroll_to_bottom(browser)
-  j = 0
-  # browser.send_keys(:control, 't')
-  browser.elements(:xpath, '//a[@class="_1pyzXOL8PW panel--hover"]').map do |transaction|
-    if j < 5 then
-      #кликаем по очерёдной транзакции
-      transaction.click
-      sleep 1
-      j += 1
-    else
-      break
-    end
-    #собираем данные с транзакции
-    header_transaction = Nokogiri::HTML(browser.html).css('span[data-semantic="payment-amount"]')
-    properties_transaction = Nokogiri::HTML(browser.html).css('div[class="uilist__item"]')
-    name_transaction = properties_transaction.css('span[class="uilist__item__label"]')[0] ? properties_transaction.css('span[class="uilist__item__label"]')[0].text : "None"
-    date_transaction        = properties_transaction.css('span[class="uilist__item__detail"]')[0] ? properties_transaction.css('span[class="uilist__item__detail"]')[0].text : "None"
-    description_transaction = properties_transaction.css('span[class="uilist__item__detail"]')[2] ? properties_transaction.css('span[class="uilist__item__detail"]')[2].text : "None"
-    amount_transaction = header_transaction.children.last.text.delete('$')
-    array_accaunts[i-1].add_transaction(name_transaction, date_transaction, description_transaction, amount_transaction)
-
-    browser.back
-    #скролим вниз
-    #scroll_to_bottom(browser)
-  end
-
+my_hash['accounts'].each_with_index do |item|
+  array_accaunts << Accaunt.new(
+      item['name'],
+      item['currentBalance']['currency'],
+      item['currentBalance']['value'],
+      item['classification']
+  )
 end
-#while transaction_date < edge_date do
+scroll_to_bottom(browser)
+browser.elements(xpath: '//li[@data-semantic="account-item"]').each_with_index do |build, index|
+  index < 4 ? (sleep 5; build.click) : break
+  puts index
+  browser.elements(xpath: '//li[@data-semantic="activity-item"]').each do |transaction|
+    transaction.wait_until_present.scroll.to #нужно подождать пока появится обьект иначе будет ошибка
+    transaction.click
+    sleep 2
+    header_transaction = Nokogiri::HTML(browser.html).css('span[data-semantic="payment-amount"]')
+    properties_transaction = Nokogiri::HTML(browser.html).css('nav[class="uilist"] > div[class="uilist__item"]')
+    array2 = ['Paid on', 'Payment Date', 'Description']
+    amount_transaction = header_transaction.children.last.text.delete('$')
+    properties_transaction.each do |list_item|
+      a = list_item.css('span[class="uilist__item__label"]').text
+      b = list_item.css('span[class="uilist__item__label"] + span[class="uilist__item__detail"]')
+      c = b ? b.text : 'None'
+      array1 = [a, c]
+      container_attributes.push(array1)
+    end
 
-puts "------------------------------------------------------------------------------------"
+    name_transaction = container_attributes.first[0]
+    date = {}
+    container_attributes.each do |item_atr|
+      if item_atr.first.eql?(array2.first) || item_atr.first.eql?(array2[1])
+        date[:date] = Date.parse(item_atr[1])
+      elsif item_atr[0].eql?(array2[2])
+        date[:any] = item_atr[1]
+      end
+    end
+
+    next if date[:date] < edge_date
+
+    array_accaunts[index - 1].add_transaction(
+        name_transaction, date_transaction,
+        description_transaction,
+        amount_transaction
+    )
+    browser.back; sleep 3
+  end
+end
+
+puts '-' * 42
 js =array_accaunts.map(&:to_h).to_json
 
 puts js
-puts "------------------------------------------------------------------------------------"
-
+puts '-' * 42
