@@ -67,7 +67,7 @@ date_transaction = ''
 description_transaction = ''
 current_date = Time.now.strftime('%e %b %Y')
 edge_date = Date.parse(current_date.to_str) - TWO_MONTH
-
+puts edge_date
 browser = Watir::Browser.new :firefox
 browser.goto 'https://demo.bendigobank.com.au/banking/sign_in'
 browser.button(:name => 'customer_type').click
@@ -87,44 +87,49 @@ my_hash['accounts'].each_with_index do |item|
       item['classification']
   )
 end
-scroll_to_bottom(browser)
+#scroll_to_bottom(browser)
+label_list = ['Paid on', 'Payment Date', 'Description']
 browser.elements(xpath: '//li[@data-semantic="account-item"]').each_with_index do |build, index|
-  index < 4 ? (sleep 5; build.click) : break
+  index < 4 ? (sleep 5; build.wait_until_present.click) : break
   puts index
   browser.elements(xpath: '//li[@data-semantic="activity-item"]').each do |transaction|
     transaction.wait_until_present.scroll.to #нужно подождать пока появится обьект иначе будет ошибка
     transaction.click
+    puts index
     sleep 2
     header_transaction = Nokogiri::HTML(browser.html).css('span[data-semantic="payment-amount"]')
     properties_transaction = Nokogiri::HTML(browser.html).css('nav[class="uilist"] > div[class="uilist__item"]')
-    array2 = ['Paid on', 'Payment Date', 'Description']
     amount_transaction = header_transaction.children.last.text.delete('$')
+    container_attributes=[]
     properties_transaction.each do |list_item|
-      a = list_item.css('span[class="uilist__item__label"]').text
-      b = list_item.css('span[class="uilist__item__label"] + span[class="uilist__item__detail"]')
-      c = b ? b.text : 'None'
-      array1 = [a, c]
-      container_attributes.push(array1)
+      label_item = list_item.css('span[class="uilist__item__label"]').text
+      detail_item = list_item.css('span[class="uilist__item__label"] + span[class="uilist__item__detail"]')
+      detail_item = detail_item ? detail_item.text : 'None'
+      array_atr = [label_item, detail_item]
+      container_attributes << array_atr
     end
 
     name_transaction = container_attributes.first[0]
     date = {}
     container_attributes.each do |item_atr|
-      if item_atr.first.eql?(array2.first) || item_atr.first.eql?(array2[1])
+      if item_atr.first.eql?(label_list.first) || item_atr.first.eql?(label_list[1])
         date[:date] = Date.parse(item_atr[1])
-      elsif item_atr[0].eql?(array2[2])
+      elsif item_atr[0].eql?(label_list[2])
         date[:any] = item_atr[1]
       end
     end
-
-    next if date[:date] < edge_date
-
-    array_accaunts[index - 1].add_transaction(
-        name_transaction, date_transaction,
-        description_transaction,
-        amount_transaction
-    )
+    #следить изменения index
+    puts date
+    puts index
     browser.back; sleep 3
+    if date[:date] >= edge_date
+     array_accaunts[index].add_transaction(
+        name_transaction, date[:date] ,
+        date[:any],
+        amount_transaction)
+    else
+      break
+    end
   end
 end
 
