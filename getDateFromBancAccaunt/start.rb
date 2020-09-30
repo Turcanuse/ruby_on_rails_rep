@@ -6,7 +6,7 @@ require 'nokogiri'
 require 'watir'
 require 'webdrivers'
 
-TWO_MONTH = 5.freeze
+TWO_MONTH = 60.freeze
 
 class Transaction
   attr_accessor :name, :date, :description, :amount
@@ -87,11 +87,12 @@ my_hash['accounts'].each_with_index do |item|
       item['classification']
   )
 end
-#scroll_to_bottom(browser)
+scroll_to_bottom(browser)
 label_list = ['Paid on', 'Payment Date', 'Description']
 browser.elements(xpath: '//li[@data-semantic="account-item"]').each_with_index do |build, index|
   index < 4 ? (sleep 5; build.wait_until_present.click) : break
   puts index
+  scroll_to_bottom(browser)
   browser.elements(xpath: '//li[@data-semantic="activity-item"]').each do |transaction|
     transaction.wait_until_present.scroll.to #нужно подождать пока появится обьект иначе будет ошибка
     transaction.click
