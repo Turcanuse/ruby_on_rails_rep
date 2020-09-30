@@ -119,9 +119,6 @@ browser.elements(xpath: '//li[@data-semantic="account-item"]').each_with_index d
         date[:any] = item_atr[1]
       end
     end
-    #следить изменения index
-    puts date
-    puts index
     browser.back; sleep 3
     if date[:date] >= edge_date
      array_accaunts[index].add_transaction(
