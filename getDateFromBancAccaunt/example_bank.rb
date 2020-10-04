@@ -2,7 +2,7 @@
 
 # Information
 # autor: Serghei Scepanovschi
-# examplebank.rb ver 1.0
+# examplebank.rb ver 1.1
 #
 
 require 'date'
@@ -144,4 +144,5 @@ class ExampleBank
     puts '-' * 42
   end
 end
-execute
+
+ExampleBank.execute
