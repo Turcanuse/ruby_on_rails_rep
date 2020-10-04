@@ -9,6 +9,7 @@ require 'date'
 require 'json'
 require 'nokogiri'
 require 'watir'
+require 'pry'
 require 'webdrivers'
 require_relative 'account'
 
@@ -27,21 +28,22 @@ class ExampleBank
     # fetch html data using nokogiri, take only fragment of html.
     strct = @@browser.script(id: 'data').innertext
     parse_accounts(strct)
+    # @@browser.elements(css: account_css_selector).each_with_index do |build, index|
+      # binding.pry
+    # build.wait_until_present.click
   end
 
   def self.fetch_transactions
-    # go to transactions
-    accounts_box = @@browser.elements(css: 'li[data-semantic="account-group"]')[0]
-    # set date for 2 month
+    #accounts_box = @@browser.elements(css: 'li[data-semantic="account-group"]')[0]
     account_css_selector = 'li[data-semantic="account-item"]'
     sleep 6
-    accounts_box.elements(css: account_css_selector).each_with_index do |build, index|
-      sleep 6
-      puts accounts_box.html
-      puts '-' * 42
+    @@browser.elements(css: account_css_selector).each_with_index do |build, index|
+      # binding.pry
       build.wait_until_present.click
+      # set date for 2 month
       set_data_filter
       scroll_to_bottom(@@browser)
+      # go to transactions
       parse_transactions(index)
     end
   end
@@ -134,14 +136,19 @@ class ExampleBank
     end
   end
 
+  # in JSON file
+  def self.save_result
+    temp_hash = @@array_accounts.map(&:to_h).to_json
+    File.open('temp.json', 'w') do |f|
+      f.write(JSON.pretty_generate(temp_hash))
+    end
+  end
+
   def self.execute
     connect
     fetch_accounts
     fetch_transactions
-    # save_result # in JSON file
-    puts '-' * 42
-    puts array_accounts.map(&:to_h).to_json
-    puts '-' * 42
+    save_result
   end
 end
 

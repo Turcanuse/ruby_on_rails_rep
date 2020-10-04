@@ -28,16 +28,6 @@ class Account
     }
   end
 
-  # get currency of current account
-  def currency
-    @currency
-  end
-
-  # get name of current account
-  def name
-    @name
-  end
-
   # method to add transaction
   def add_transaction(v_date, v_description, v_amount, v_currency, v_account_name)
     transactions << Transaction.new(v_date, v_description, v_amount, v_currency, v_account_name)
@@ -48,6 +38,6 @@ end
 def scroll_to_bottom(browser)
   loop do
     browser.scroll.to :bottom
-    break if browser.text.include?('No more activity')
+    break if browser.text.include?('No more activity') || browser.text.include?('No matching activity found.')
   end
 end
