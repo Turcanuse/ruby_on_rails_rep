@@ -15,9 +15,12 @@ require_relative 'account'
 
 # main class to fetch and parse our site
 class ExampleBank
+  #attr_accessor :browser, :accounts
   @@browser = Watir::Browser.new :firefox
-  @@array_accounts = []
-
+  @@accounts = []
+  def self.accounts
+    @@accounts
+  end
   def self.connect
     # here you log in to the bank
     @@browser.goto 'https://demo.bendigobank.com.au/banking/sign_in'
@@ -26,11 +29,8 @@ class ExampleBank
 
   def self.fetch_accounts
     # fetch html data using nokogiri, take only fragment of html.
-    strct = @@browser.script(id: 'data').innertext
+    strct = @@browser.script(id: 'data')
     parse_accounts(strct)
-    # @@browser.elements(css: account_css_selector).each_with_index do |build, index|
-      # binding.pry
-    # build.wait_until_present.click
   end
 
   def self.fetch_transactions
@@ -48,7 +48,8 @@ class ExampleBank
     end
   end
 
-  def self.parse_accounts(strct)
+  def self.parse_accounts(html)
+    strct = html.innertext
     # parse accounts here
     pos1 = strct.rindex(/__DATA__/)
     pos2 = strct.rindex(/__BOOTSTRAP_I18N__/)
@@ -58,7 +59,7 @@ class ExampleBank
     strct = strct.slice(pos1, pos2)
     my_hash = JSON.parse(strct)
     my_hash['accounts'].each do |item|
-      @@array_accounts << Account.new(
+      @@accounts << Account.new(
         item['name'],
         item['currentBalance']['currency'],
         item['currentBalance']['value'].to_f,
@@ -94,8 +95,8 @@ class ExampleBank
 
     label_list = ['Paid on', 'Payment Date', 'Description']
 
-    currency_transaction = @@array_accounts[index].currency.to_f
-    account_name = @@array_accounts[index].name
+    currency_transaction = @@accounts[index].currency.to_f
+    account_name = @@accounts[index].name
     puts account_name
     @@browser.elements(css: transaction_css_selector).each do |transaction|
       transaction.wait_until_present.scroll.to # we have to wait till object will be available
@@ -128,7 +129,7 @@ class ExampleBank
       description_transaction = date[:any]
       @@browser.back
       sleep 3
-      @@array_accounts[index].add_transaction(
+      @@accounts[index].add_transaction(
         date_transaction, description_transaction,
         amount_transaction, currency_transaction,
         account_name
@@ -138,7 +139,7 @@ class ExampleBank
 
   # in JSON file
   def self.save_result
-    temp_hash = @@array_accounts.map(&:to_h).to_json
+    temp_hash = @@accounts.map(&:to_h).to_json
     File.open('temp.json', 'w') do |f|
       f.write(JSON.pretty_generate(temp_hash))
     end
@@ -151,5 +152,3 @@ class ExampleBank
     save_result
   end
 end
-
-ExampleBank.execute
